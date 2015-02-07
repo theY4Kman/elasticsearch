@@ -7,15 +7,26 @@
 # Pull base image.
 FROM dockerfile/java:oracle-java8
 
-ENV ES_PKG_NAME elasticsearch-1.4.2
+ENV ES_PKG_NAME elasticsearch-2.0.0-SNAPSHOT
+ENV ES_COMMIT 896e8657ea498c074e9b7661d71f698b5cd23e94
+ENV MVN_PKG_NAME apache-maven-3.2.5
 
-# Install Elasticsearch.
+# Install Elasticsearch snapshot.
 RUN \
   cd / && \
-  wget https://download.elasticsearch.org/elasticsearch/elasticsearch/$ES_PKG_NAME.tar.gz && \
+  wget http://psg.mtu.edu/pub/apache/maven/maven-3/3.2.5/binaries/$MVN_PKG_NAME-bin.tar.gz && \
+  tar xvzf $MVN_PKG_NAME-bin.tar.gz && \
+  rm -f $MVN_PKG_NAME-bin.tar.gz && \
+  apt-get install build-essential && \
+  wget https://github.com/elasticsearch/elasticsearch/archive/$ES_COMMIT.tar.gz && \
+  tar xvzf $ES_COMMIT.tar.gz && \
+  rm -f $ES_COMMIT.tar.gz && \
+  cd /elasticsearch-$ES_COMMIT && \
+  /$MVN_PKG_NAME/bin/mvn clean package -DskipTests && \
+  cd /elasticsearch-$ES_COMMIT/target/releases/ && \
   tar xvzf $ES_PKG_NAME.tar.gz && \
-  rm -f $ES_PKG_NAME.tar.gz && \
-  mv /$ES_PKG_NAME /elasticsearch
+  mv /elasticsearch-$ES_COMMIT/target/releases/$ES_PKG_NAME /elasticsearch && \
+  rm -rf /$MVN_PKG_NAME /elasticsearch-$ES_COMMIT
 
 # Define mountable directories.
 VOLUME ["/data"]
@@ -34,3 +45,4 @@ CMD ["/elasticsearch/bin/elasticsearch"]
 #   - 9300: transport
 EXPOSE 9200
 EXPOSE 9300
+
